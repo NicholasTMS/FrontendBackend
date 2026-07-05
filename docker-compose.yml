@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: banjir-db
+    environment:
+      POSTGRES_DB: BanjirAssisst
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: nickythong
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: banjir-backend
+    restart: on-failure
+    ports:
+      - "8080:8080"
+    environment:
+      # Override the localhost URL to use the 'db' container hostname
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/BanjirAssisst
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=nickythong
+    volumes:
+      - incident_images:/app/images
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./banjirassisst
+      dockerfile: Dockerfile
+    container_name: banjir-frontend
+    ports:
+      # Maps host port 5173 to container port 80 (Nginx) to satisfy your CORS config
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata: # This is the persistent volume for the database
+  incident_images:
